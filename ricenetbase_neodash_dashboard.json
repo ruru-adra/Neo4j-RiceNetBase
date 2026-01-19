@@ -1,0 +1,163 @@
+{
+  "title": "RiceNetBase Dashboard",
+  "version": "2.4",
+  "settings": {
+    "pagenumber": 0,
+    "editable": true,
+    "fullscreenEnabled": false,
+    "parameters": {
+      "neodash_sub_traits": [
+        "Bacteria leaf blight",
+        "Drought"
+      ],
+      "neodash_sub_traits_display": [
+        "Bacteria leaf blight, ",
+        "Drought"
+      ],
+      "neodash_osid": [
+        "Os08g0155900",
+        "Os05g0365300",
+        "Os10g0565600"
+      ],
+      "neodash_osid_display": [
+        "Os08g0155900, ",
+        "Os05g0365300, ",
+        "Os10g0565600"
+      ]
+    },
+    "theme": "light"
+  },
+  "pages": [
+    {
+      "title": "New page",
+      "reports": [
+        {
+          "id": "f1796565-e761-49d7-9fd8-c16afcce677c",
+          "title": "Select Rice Traits",
+          "query": "MATCH (n:`SUB-TRAITS`)\nWHERE toLower(toString(n.`Sub-traits`)) CONTAINS\ntoLower($input)\nRETURN DISTINCT n.`Sub-traits` as value, n.`Sub-traits` as display\nORDER BY size(toString(value)) ASC LIMIT 5\n\n\n",
+          "width": 11,
+          "height": 2,
+          "x": 0,
+          "y": 0,
+          "type": "select",
+          "selection": {},
+          "settings": {
+            "type": "Custom Query",
+            "entityType": "sub-traits",
+            "parameterName": "neodash_sub_traits",
+            "multiSelector": true,
+            "multiline": true
+          },
+          "schema": []
+        },
+        {
+          "id": "d172f4d1-8e23-43d3-9aec-e97523d04443",
+          "title": "Gene List Search",
+          "query": "MATCH (s:`SUB-TRAITS`)-[]->(n:GENE)\nWHERE toString(n.OsID) CONTAINS $input AND s.`Sub-traits` IN\n$neodash_sub_traits\nRETURN DISTINCT n.OsID as OsID",
+          "width": 11,
+          "height": 2,
+          "x": 13,
+          "y": 0,
+          "type": "select",
+          "selection": {},
+          "settings": {
+            "type": "Custom Query",
+            "entityType": "osid",
+            "parameterName": "neodash_osid",
+            "multiSelector": true,
+            "multiline": true
+          },
+          "schema": []
+        },
+        {
+          "id": "09269347-35e1-4435-ad17-86df1d9972e1",
+          "title": "Network Visualisation",
+          "query": "MATCH p = (t)-[]-(s)-[]-(g)\nWHERE\n($neodash_sub_traits IS NULL OR $neodash_sub_traits = [] OR\ng.`Sub-traits` IN $neodash_sub_traits )\nAND\n($neodash_osid IS NULL OR $neodash_osid = [] OR s.OsID IN\n$neodash_osid)\nRETURN p",
+          "width": 24,
+          "height": 6,
+          "x": 0,
+          "y": 2,
+          "type": "graph",
+          "selection": {
+            "PUBLICATION": "Year",
+            "GENE": "OsID",
+            "SUB-TRAITS": "Sub-traits",
+            "SNP": "SNP",
+            "SSR": "SSR",
+            "PPIN": "(label)",
+            "PROTEIN": "(label)"
+          },
+          "settings": {},
+          "schema": [
+            [
+              "PUBLICATION",
+              "Year",
+              "Publication",
+              "Title",
+              "Journal"
+            ],
+            [
+              "GENE",
+              "Score",
+              "GeneDescription",
+              "Rank",
+              "OsID",
+              "Chr",
+              "GeneSymbol"
+            ],
+            [
+              "SUB-TRAITS",
+              "Sub-traits",
+              "Total Gene"
+            ],
+            [
+              "SNP",
+              "SIFT",
+              "SNP",
+              "SIFT_score"
+            ],
+            [
+              "SSR",
+              "left_primer",
+              "SSR",
+              "right_primer",
+              "Repetitions",
+              "ssr_type",
+              "right_TM",
+              "left_TM",
+              "Motif"
+            ],
+            [
+              "PPIN",
+              "PPIN",
+              "PPIN_Score",
+              "Source"
+            ],
+            [
+              "PROTEIN",
+              "Protein"
+            ]
+          ]
+        },
+        {
+          "id": "d5aecdf7-9b8f-4024-8758-b94ca3dc9bfe",
+          "title": "Network Descriptions",
+          "query": "MATCH p = (t:TRAITS)-[]-(s:`SUB-TRAITS`)-[]-(g:`GENE`)-[r]-(f)\nWHERE\n( s.`Sub-traits` IN $neodash_sub_traits OR s.`Sub-traits` = [])\nAND\n( $neodash_osid = [] OR g.OsID IN $neodash_osid)\nRETURN DISTINCT t.Trait AS Traits,\ns.`Sub-traits` as `Sub traits`,\ng.OsID AS OsID,\ng.GeneSymbol AS `Gene Symbol`,\ng.Chr AS Chr,\ng.GeneDescription AS `Gene Description`,\ng. Score AS Score,\ng.Rank AS Rank,\nCASE\nWHEN type(r) = 'occurs in' THEN 'Publication'\nWHEN type(r) = 'encodes' THEN 'Protein'\nWHEN type(r) = 'associated with' THEN 'GWAS'\nWHEN type(r) = 'influences' THEN 'LEADSNP'\nWHEN type(r) = 'contains' THEN 'SNP'\nWHEN type(r) = 'linked to' THEN 'QTL'\nWHEN type(r) = 'involves' THEN 'Pathway'\nWHEN type(r) = 'contain SSR' THEN 'SSR'\nWHEN type(r) = 'interacts in ' THEN 'PPIN'\nELSE type(r)\nEND AS `Data Type`,\nCOUNT(f) AS `Total Evidence`\nORDER BY g.Score DESC\n\n\n",
+          "width": 24,
+          "height": 4,
+          "x": 0,
+          "y": 8,
+          "type": "table",
+          "selection": {},
+          "settings": {}
+        }
+      ]
+    }
+  ],
+  "parameters": {},
+  "extensions": {
+    "active": true,
+    "activeReducers": []
+  },
+  "uuid": "880c1b2e-010d-44ef-a923-a35ee06fc5ac"
+}
