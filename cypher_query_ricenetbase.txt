@@ -1,0 +1,51 @@
+#Cypher Query to create filter to select rice traits.
+MATCH (n:`SUB-TRAITS`)
+WHERE toLower(toString(n.`Sub-traits`)) CONTAINS
+toLower($input)
+RETURN DISTINCT n.`Sub-traits` as value, n.`Sub-traits` as display
+ORDER BY size(toString(value)) ASC LIMIT 5
+
+#Cypher Query to create filter to select gene OsID. 
+MATCH (s:`SUB-TRAITS`)-[]->(n:GENE)
+WHERE toString(n.OsID) CONTAINS $input AND s.`Sub-traits` IN
+$neodash_sub_traits
+RETURN DISTINCT n.OsID as OsID
+
+#Cypher Query to create network visualization for RiceNetBase
+MATCH p = (t)-[]-(s)-[]-(g)
+WHERE
+($neodash_sub_traits IS NULL OR $neodash_sub_traits = [] OR
+g.`Sub-traits` IN $neodash_sub_traits )
+AND
+($neodash_osid IS NULL OR $neodash_osid = [] OR s.OsID IN
+$neodash_osid)
+RETURN p
+
+#Cypher query to to create description table.
+MATCH p = (t:TRAITS)-[]-(s:`SUB-TRAITS`)-[]-(g:`GENE`)-[r]-(f)
+WHERE
+( s.`Sub-traits` IN $neodash_sub_traits OR s.`Sub-traits` = [])
+AND
+( $neodash_osid = [] OR g.OsID IN $neodash_osid)
+RETURN DISTINCT t.Trait AS Traits,
+s.`Sub-traits` as `Sub traits`,
+g.OsID AS OsID,
+g.GeneSymbol AS `Gene Symbol`,
+g.Chr AS Chr,
+g.GeneDescription AS `Gene Description`,
+g. Score AS Score,
+g.Rank AS Rank,
+CASE
+WHEN type(r) = 'occurs in' THEN 'Publication'
+WHEN type(r) = 'encodes' THEN 'Protein'
+WHEN type(r) = 'associated with' THEN 'GWAS'
+WHEN type(r) = 'influences' THEN 'LEADSNP'
+WHEN type(r) = 'contains' THEN 'SNP'
+WHEN type(r) = 'linked to' THEN 'QTL'
+WHEN type(r) = 'involves' THEN 'Pathway'
+WHEN type(r) = 'contain SSR' THEN 'SSR'
+WHEN type(r) = 'interacts in ' THEN 'PPIN'
+ELSE type(r)
+END AS `Data Type`,
+COUNT(f) AS `Total Evidence`
+ORDER BY g.Score DESC
